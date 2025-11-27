@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:15
+    container_name: mercado_postgres
+    environment:
+      POSTGRES_DB: mercado_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: ./mercado_backend
+    container_name: mercado_django
+    environment:
+      DB_NAME: mercado_db
+      DB_USER: postgres
+      DB_PASSWORD: root
+      DB_HOST: db
+      DB_PORT: 5432
+      SECRET_KEY: django-insecure-dev-key-change-in-production
+      DEBUG: 'True'
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./mercado_backend:/app
+    command: python manage.py runserver 0.0.0.0:8000
+
+  frontend:
+    build: ./mercado_frontend
+    container_name: mercado_react
+    environment:
+      VITE_API_URL: http://backend:8000/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./mercado_frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
