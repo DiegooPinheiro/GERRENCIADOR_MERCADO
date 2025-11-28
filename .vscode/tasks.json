@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open psql (docker)",
+      "type": "shell",
+      "command": "docker exec -it mercado_postgres psql -U postgres -d mercado_db",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "SQL Tools: smoke test — count produtos",
+      "type": "shell",
+      "command": "docker exec mercado_postgres psql -U postgres -d mercado_db -c \"SELECT COUNT(*) FROM produtos_produto;\"",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

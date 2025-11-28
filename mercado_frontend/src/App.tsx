@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import './App.css'
 
@@ -6,6 +6,16 @@ interface Produto {
   id: number
   nome: string
   preco: number
+  estoque: number
+  created_at: string
+  updated_at: string
+}
+
+// shape returned by API (preco may be string because DRF DecimalField is serialized as string)
+interface ApiProduto {
+  id: number
+  nome: string
+  preco: string | number
   estoque: number
   created_at: string
   updated_at: string
@@ -21,37 +31,81 @@ function App() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+  // Prefer explicit VITE_API_URL only when it's a browser-reachable host (localhost).
+  // Otherwise prefer the relative '/api' path so the dev server proxy forwards calls
+  // to the internal backend host (useful when running the whole stack with docker-compose).
+  // typed access to import.meta.env to avoid `any`
+  const meta = import.meta as unknown as { env?: { VITE_API_URL?: string } }
+  const _envApi = (meta.env?.VITE_API_URL ?? '').trim()
 
-  useEffect(() => {
-    fetchProdutos()
-  }, [])
+  // Normalize helper: remove trailing slashes and ensure we don't duplicate '/api'
+  const normalizeBase = (raw: string) => {
+    if (!raw) return ''
+    // strip trailing slashes — prefer const instead of let
+    const out = raw.replace(/\/+$/, '')
+    // if the host contains '/api' at the end keep it (we'll join correctly later), just avoid double slashes
+    return out
+  }
 
-  const fetchProdutos = async () => {
+  const envApi = normalizeBase(_envApi)
+
+  // safe URL builder used by multiple functions (stable reference via useCallback)
+  const buildUrl = useCallback((base: string, p: string) => base.endsWith('/') ? `${base}${p.replace(/^\//, '')}` : `${base}/${p.replace(/^\//, '')}`, [])
+
+  // If VITE_API_URL is explicitly a browser-reachable host (localhost or 127.*), use it, else proxy via '/api'
+  const API_BASE_URL = envApi && /^https?:\/\/(localhost|127\.0\.0\.1)/.test(envApi) ? envApi : '/api'
+
+  // ensure fetchProdutos is stable and add to deps to satisfy the hooks linter
+  const fetchProdutos = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/produtos/`)
-      setProdutos(response.data)
+      const response = await axios.get<ApiProduto[]>(buildUrl(API_BASE_URL, 'produtos/'))
+      // backend returns Decimal as string — normalize preco to Number so UI can use toFixed safely
+      const normalized: Produto[] = response.data.map((p) => ({ ...p, preco: Number(p.preco) }))
+      setProdutos(normalized)
     } catch (error) {
       console.error('Erro ao buscar produtos:', error)
     }
-  }
+  }, [API_BASE_URL, buildUrl])
+
+  useEffect(() => {
+    fetchProdutos()
+  }, [fetchProdutos])
+
+  // fetchProdutos moved above and memoized via useCallback
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const data = {
-        nome: formData.nome,
-        preco: parseFloat(formData.preco),
-        estoque: parseInt(formData.estoque)
+      // Validate & parse inputs
+      const nome = formData.nome.trim()
+      const preco = parseFloat(formData.preco)
+      const estoque = parseInt(formData.estoque)
+
+      if (!nome) {
+        alert('Nome é obrigatório')
+        setLoading(false)
+        return
+      }
+      if (!Number.isFinite(preco)) {
+        alert('Preço inválido')
+        setLoading(false)
+        return
+      }
+      if (!Number.isFinite(estoque)) {
+        alert('Estoque inválido')
+        setLoading(false)
+        return
       }
 
+      const data = { nome, preco, estoque }
+
       if (editingId) {
-        await axios.put(`${API_BASE_URL}/produtos/${editingId}/`, data)
+        await axios.put(buildUrl(API_BASE_URL, `produtos/${editingId}/`), data)
         setEditingId(null)
       } else {
-        await axios.post(`${API_BASE_URL}/produtos/`, data)
+        await axios.post(buildUrl(API_BASE_URL, 'produtos/'), data)
       }
 
       setFormData({ nome: '', preco: '', estoque: '' })
@@ -75,7 +129,7 @@ function App() {
   const handleDelete = async (id: number) => {
     if (window.confirm('Tem certeza que deseja excluir este produto?')) {
       try {
-        await axios.delete(`${API_BASE_URL}/produtos/${id}/`)
+        await axios.delete(buildUrl(API_BASE_URL, `produtos/${id}/`))
         fetchProdutos()
       } catch (error) {
         console.error('Erro ao excluir produto:', error)
@@ -152,7 +206,10 @@ function App() {
               {produtos.map((produto) => (
                 <div key={produto.id} className="produto-card">
                   <h3>{produto.nome}</h3>
-                  <p><strong>Preço:</strong> R$ {produto.preco.toFixed(2)}</p>
+                  <p>
+                    <strong>Preço:</strong>{' '}
+                    R$ {typeof produto.preco === 'number' && !isNaN(produto.preco) ? produto.preco.toFixed(2) : String(produto.preco)}
+                  </p>
                   <p><strong>Estoque:</strong> {produto.estoque} unidades</p>
                   <div className="card-buttons">
                     <button onClick={() => handleEdit(produto)} className="edit-btn">

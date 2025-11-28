@@ -34,7 +34,12 @@ services:
   frontend:
     build: ./mercado_frontend
     container_name: mercado_react
+    # For browsers running on the host machine we recommend the frontend use an
+    # absolute, browser-reachable backend URL. Set VITE_API_URL to the host-mapped
+    # backend address so client-side calls go directly to the backend.
     environment:
+      # Inside the compose network the frontend container talks to the backend by the service name `backend`.
+      # Use the internal service hostname when running the stack via docker-compose.
       VITE_API_URL: http://backend:8000/api
     ports:
       - "5173:5173"

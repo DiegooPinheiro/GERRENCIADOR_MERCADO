@@ -1,0 +1,51 @@
+{
+  // SQLTools connection configured for the local development Postgres
+  // NOTE: this file stores dev credentials (postgres/root) for convenience in the workspace.
+  // If you prefer not to commit credentials, remove the "password" entry and add the connection manually.
+  "sqltools.connections": [
+    {
+      "name": "mercado-local",
+      "driver": "PostgreSQL",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "database": "mercado_db",
+      "username": "postgres",
+      "password": "root",
+      "connectionTimeout": 30
+    }
+  ],
+  "sqltools.useNodeRuntime": true
+}
+{
+  // SQLTools connection preset so you can open the project's DB directly from VS Code
+  "sqltools.connections": [
+    {
+      "name": "mercado_db (local)",
+      "driver": "PostgreSQL",
+      "server": "localhost",
+      "port": 5432,
+      "database": "mercado_db",
+      "username": "postgres",
+      "password": "root",
+      "previewLimit": 50
+    }
+  ],
+
+  // Optional: automatically open the SQLTools view when workspace opens
+  "sqltools.useNodeRuntime": true
+}
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "localhost",
+            "username": "postgres",
+            "database": "mercado_db"
+        }
+    ]
+}
