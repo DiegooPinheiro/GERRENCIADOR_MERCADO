@@ -2,7 +2,7 @@ import React from 'react'
 
 type State = { hasError: boolean; error?: Error }
 
-// Allow children prop in props typing so TypeScript sees React children correctly
+// Permite a prop children na tipagem de props para que o TypeScript veja os filhos do React corretamente
 type Props = React.PropsWithChildren<{}>
 
 export default class ErrorBoundary extends React.Component<Props, State> {
@@ -16,7 +16,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: any) {
-    // Log to console — you could hook a telemetry service here
+  // Registra no console — você poderia conectar um serviço de telemetria aqui
     console.error('Uncaught error in App:', error, info)
   }
 

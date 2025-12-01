@@ -29,7 +29,8 @@ services:
       - db
     volumes:
       - ./mercado_backend:/app
-    command: python manage.py runserver 0.0.0.0:8000
+    # Run migrations on startup then start the dev server. Mirrors the backend Dockerfile CMD.
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
   frontend:
     build: ./mercado_frontend

@@ -11,7 +11,7 @@ interface Produto {
   updated_at: string
 }
 
-// shape returned by API (preco may be string because DRF DecimalField is serialized as string)
+// formato retornado pela API (preco pode ser string porque DRF DecimalField é serializado como string)
 interface ApiProduto {
   id: number
   nome: string
@@ -31,35 +31,35 @@ function App() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Prefer explicit VITE_API_URL only when it's a browser-reachable host (localhost).
-  // Otherwise prefer the relative '/api' path so the dev server proxy forwards calls
-  // to the internal backend host (useful when running the whole stack with docker-compose).
-  // typed access to import.meta.env to avoid `any`
+  // Prefere VITE_API_URL explícito apenas quando é um host acessível pelo navegador (localhost).
+  // Caso contrário, prefere o caminho relativo '/api' para que o proxy do servidor de desenvolvimento encaminhe as chamadas
+  // para o host interno do backend (útil ao executar toda a pilha com docker-compose).
+  // acesso tipado a import.meta.env para evitar `any`
   const meta = import.meta as unknown as { env?: { VITE_API_URL?: string } }
   const _envApi = (meta.env?.VITE_API_URL ?? '').trim()
 
-  // Normalize helper: remove trailing slashes and ensure we don't duplicate '/api'
+  // Auxiliar de normalização: remove barras finais e garante que não dupliquemos '/api'
   const normalizeBase = (raw: string) => {
     if (!raw) return ''
-    // strip trailing slashes — prefer const instead of let
+    // remove barras finais — prefere const em vez de let
     const out = raw.replace(/\/+$/, '')
-    // if the host contains '/api' at the end keep it (we'll join correctly later), just avoid double slashes
+    // se o host contém '/api' no final, mantenha (juntaremos corretamente depois), apenas evite barras duplas
     return out
   }
 
   const envApi = normalizeBase(_envApi)
 
-  // safe URL builder used by multiple functions (stable reference via useCallback)
+  // construtor de URL seguro usado por múltiplas funções (referência estável via useCallback)
   const buildUrl = useCallback((base: string, p: string) => base.endsWith('/') ? `${base}${p.replace(/^\//, '')}` : `${base}/${p.replace(/^\//, '')}`, [])
 
-  // If VITE_API_URL is explicitly a browser-reachable host (localhost or 127.*), use it, else proxy via '/api'
+  // Se VITE_API_URL é explicitamente um host acessível pelo navegador (localhost ou 127.*), use-o, senão proxy via '/api'
   const API_BASE_URL = envApi && /^https?:\/\/(localhost|127\.0\.0\.1)/.test(envApi) ? envApi : '/api'
 
-  // ensure fetchProdutos is stable and add to deps to satisfy the hooks linter
+  // garante que fetchProdutos seja estável e adicione às deps para satisfazer o linter de hooks
   const fetchProdutos = useCallback(async () => {
     try {
       const response = await axios.get<ApiProduto[]>(buildUrl(API_BASE_URL, 'produtos/'))
-      // backend returns Decimal as string — normalize preco to Number so UI can use toFixed safely
+      // backend retorna Decimal como string — normalize preco para Number para que a UI possa usar toFixed com segurança
       const normalized: Produto[] = response.data.map((p) => ({ ...p, preco: Number(p.preco) }))
       setProdutos(normalized)
     } catch (error) {
@@ -71,14 +71,14 @@ function App() {
     fetchProdutos()
   }, [fetchProdutos])
 
-  // fetchProdutos moved above and memoized via useCallback
+  // fetchProdutos movido acima e memoizado via useCallback
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      // Validate & parse inputs
+      // Validar e analisar entradas
       const nome = formData.nome.trim()
       const preco = parseFloat(formData.preco)
       const estoque = parseInt(formData.estoque)
